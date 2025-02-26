@@ -1,40 +1,40 @@
-const express = require("express")
-const app = express()
-const bodyParser = require("body-parser")
-const axios = require("axios")
+require("dotenv").config();
+const express = require("express");
+const axios = require("axios");
 
-app.use(bodyParser.json())
-app.use(
-    bodyParser.urlencoded({
-        extended: true,
-    })
-)
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.post("/new-message", (req, res) => {
-    const {message} = req.body;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
-    if(!message || message.text.toLowerCase().indexOf("career") < 0){
-        return res.end();
+app.post("/new-message", async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        if (!message || !message.text || !message.chat || !message.chat.id) {
+            return res.status(400).send("Invalid request");
+        }
+
+        if (!message.text.toLowerCase().includes("career")) {
+            return res.end();
+        }
+
+        await axios.post(TELEGRAM_API_URL, {
+            chat_id: message.chat.id,
+            text: "apply!",
+        });
+
+        console.log("Message posted");
+        res.send("ok");
+    } catch (err) {
+        console.error("Error:", err.message);
+        res.status(500).send("Error: " + err.message);
     }
+});
 
-    axios
-        .post(
-            "https://api.telegram.org/bot8052086424:AAET1uXu-31-oPMr_lFXtwE--G61mfQCLG4/sendMessage",
-            {
-                chat_id: message.chat.id,
-                text: "apply!",
-            }
-        )
-        .then((response) => {
-            console.log("Message posted")
-            res.end("ok")
-        })
-        .catch((err) => {
-            console.log("Error :", err)
-            res.end("Error :" + err)
-        })
-})
-
-app.listen(3000, () => {
-    console.log("telegram app listening on port 3000!")
-})
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Telegram app listening on port ${PORT}!`);
+});
